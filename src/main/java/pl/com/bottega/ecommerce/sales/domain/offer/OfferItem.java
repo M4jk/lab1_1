@@ -13,27 +13,20 @@
 package pl.com.bottega.ecommerce.sales.domain.offer;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.Objects;
 
 public class OfferItem {
 
-    // product
     private Product product;
-
     private int quantity;
-
-    private BigDecimal totalCost;
-
-    private String currency;
-
+    private Money totalCost;
     private Discount discount;
 
-    public OfferItem(Product product, int quantity) {
-        this(product, quantity, null);
+    public OfferItem(Product product, int quantity, String currency) {
+        this(product, quantity, currency, null);
     }
 
-    public OfferItem(Product product, int quantity, Discount discount) {
+    public OfferItem(Product product, int quantity, String currency, Discount discount) {
         this.product = product;
 
         this.quantity = quantity;
@@ -41,22 +34,18 @@ public class OfferItem {
 
         BigDecimal discountValue = new BigDecimal(0);
         if (discount != null) {
-            discountValue = discountValue.add(discount.getDiscount());
+            discountValue = discountValue.add(discount.getAmount().getValue());
         }
 
-        this.totalCost = product.getPrice().multiply(new BigDecimal(quantity)).subtract(discountValue);
+        this.totalCost = new Money(product.getPrice().getValue().multiply(new BigDecimal(quantity)).subtract(discountValue), currency);
     }
 
     public Product getProduct() {
         return product;
     }
 
-    public BigDecimal getTotalCost() {
+    public Money getTotalCost() {
         return totalCost;
-    }
-
-    public String getTotalCostCurrency() {
-        return currency;
     }
 
     public Discount getDiscount() {
@@ -67,11 +56,13 @@ public class OfferItem {
         return quantity;
     }
 
-    @Override public int hashCode() {
-        return Objects.hash(currency, discount, product, quantity, totalCost);
+    @Override
+    public int hashCode() {
+        return Objects.hash(discount, product, quantity, totalCost);
     }
 
-    @Override public boolean equals(Object obj) {
+    @Override
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -82,12 +73,14 @@ public class OfferItem {
             return false;
         }
         OfferItem other = (OfferItem) obj;
-        return Objects.equals(currency, other.currency) && Objects.equals(discount, other.discount) && Objects.equals(product,
-                other.product) && quantity == other.quantity && Objects.equals(totalCost, other.totalCost);
+        return Objects.equals(discount, other.discount)
+               && Objects.equals(product, other.product)
+               && quantity == other.quantity
+               && Objects.equals(totalCost, other.totalCost);
     }
 
     /**
-     * @param item
+     * @param other other OfferItem
      * @param delta acceptable percentage difference
      * @return
      */
@@ -106,12 +99,12 @@ public class OfferItem {
 
         BigDecimal max;
         BigDecimal min;
-        if (totalCost.compareTo(other.totalCost) > 0) {
-            max = totalCost;
-            min = other.totalCost;
+        if (totalCost.getValue().compareTo(other.totalCost.getValue()) > 0) {
+            max = totalCost.getValue();
+            min = other.totalCost.getValue();
         } else {
-            max = other.totalCost;
-            min = totalCost;
+            max = other.totalCost.getValue();
+            min = totalCost.getValue();
         }
 
         BigDecimal difference = max.subtract(min);
